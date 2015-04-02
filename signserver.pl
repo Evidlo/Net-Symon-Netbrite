@@ -7,7 +7,7 @@ use Net::Symon::NetBrite qw(:constants);
 use Net::Symon::NetBrite::Zone;
 
 my $sign = Net::Symon::NetBrite->new(
-    address => '10.150.3.149',
+    address => '192.168.220.241',
 );
 
 my $hostwidth = 50;
