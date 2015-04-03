@@ -42,30 +42,44 @@ my $sign = Net::Symon::NetBrite->new(
     address => $signAddr,
 );
 
-my $bwOut = new Net::Symon::NetBrite::Zone(
-    rect => [0, 0, 80, 8],
+my $strOut = new Net::Symon::NetBrite::Zone(
+    rect => [0, 0, 30, 8],
     default_font  => 'proportional_5',
     default_color => COLOR_RED,
-    initial_text  => '{scrolloff}{right}'.$strOutPostfix,
+    initial_text  => sprintf('{scrolloff}{left}%s', $strOutPostfix),
+);
+my $bwOut = new Net::Symon::NetBrite::Zone(
+    rect => [31, 0, 60, 8],
+    default_font  => 'proportional_5',
+    default_color => COLOR_RED,
+    initial_text  => sprintf('{scrolloff}{right}%d', 0),
 );
 
-my $bwIn = new Net::Symon::NetBrite::Zone(
-    rect => [0, 9, 80, 16],
+my $strIn = new Net::Symon::NetBrite::Zone(
+    rect => [0, 9, 30, 16],
     default_font  => 'proportional_5',
     default_color => COLOR_GREEN,
-    initial_text  => '{scrolloff}{right}' . $strInPostfix,
+   initial_text  => sprintf('{scrolloff}{left}%s', $strInPostfix),
+);
+my $bwIn = new Net::Symon::NetBrite::Zone(
+    rect => [31, 9, 60, 16],
+    default_font  => 'proportional_5',
+    default_color => COLOR_GREEN,
+   initial_text  => sprintf('{scrolloff}{right}%d', 0),
 );
 
 my $status = new Net::Symon::NetBrite::Zone(
-    rect => [81, 0, 160, 16],
+    rect => [61, 0, 160, 16],
     default_font  => 'monospace_16',
     default_color => COLOR_GREEN,
-    initial_text  => '{scrolloff}{right}' . $welcome,
+    initial_text  => '{scrolloff}{center}' . $welcome,
 );
 
     
 $sign->zones(
+    strout => $strOut,
     bwout  => $bwOut,
+    strin  => $strIn,
     bwin   => $bwIn,
     status => $status,
 );
@@ -111,8 +125,8 @@ sub set_bwsign
 
     $session->close();
 
-    print "Result In: $varIn\n";
-    print "Result Out: $varOut\n";
+    #print "Result In: $varIn\n";
+    #print "Result Out: $varOut\n";
 
     if ($varIn < $oldVarIn) {
         $mbIn = (($ctrMax - $oldVarIn) + $varIn);
@@ -131,8 +145,8 @@ sub set_bwsign
     printf "MB IN: %.2f\n", $mbIn;
     printf "MB OUT: %.2f\n", $mbOut;
 
-    $sign->message('bwin', sprintf '{scrolloff}{right}%.0f %s', $mbIn, $strInPostfix);
-    $sign->message('bwout', sprintf '{scrolloff}{right}%.0f %s', $mbOut, $strOutPostfix);
+    $sign->message('bwin', sprintf '{scrolloff}{right}%.0f', $mbIn);
+    $sign->message('bwout', sprintf '{scrolloff}{right}%.0f', $mbOut);
 
 
 }
