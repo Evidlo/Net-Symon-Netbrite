@@ -8,8 +8,8 @@ use Net::SNMP;
 use Net::Symon::NetBrite qw(:constants);
 use Net::Symon::NetBrite::Zone;
 
-my $signAddr = '192.168.220.241';
-my $welcome  = 'GIMPLAN!';
+my $signAddr = shift || '192.168.220.242';
+my $welcome  = shift || 'GIMPLAN!';
 
 my $router   = '192.168.220.254';
 my $comm     = 'public';
@@ -20,11 +20,13 @@ my $mibIn    = '.1.3.6.1.2.1.31.1.1.1.6';  # IF-MIB::ifHCInOctets
 my $mibOut   = '.1.3.6.1.2.1.31.1.1.1.10'; # IF-MIB::ifHCOutOctets
 my $ifIndex  = '510';
 
-my $strInPostfix  = 'M IN ';
-my $strOutPostfix = 'M OUT';
+my $strInPostfix  = 'k IN ';
+my $strOutPostfix = 'k OUT';
 
 my $ctrMax   = 18446744073709551615;
 my $sleep    = 5; # number of seconds between updates
+#my $factor   = 1048576; # Factor to shorten by, to get to MB/s
+my $factor   = 1024; # Factor to shorten by, to get to kB/s
 
 my $result;    # holds response
 
@@ -123,8 +125,8 @@ sub set_bwsign
         $mbOut = ($varOut - $oldVarOut);
     }
     
-    $mbIn  /= 1048576 * $sleep;
-    $mbOut /= 1048576 * $sleep;
+    $mbIn  /= $factor * $sleep;
+    $mbOut /= $factor * $sleep;
 
     printf "MB IN: %.2f\n", $mbIn;
     printf "MB OUT: %.2f\n", $mbOut;
