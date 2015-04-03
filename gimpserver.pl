@@ -72,6 +72,7 @@ my $status = new Net::Symon::NetBrite::Zone(
     rect => [61, 0, 160, 16],
     default_font  => 'monospace_16',
     default_color => COLOR_GREEN,
+    scroll_speed => SCROLL_SLOW,
     initial_text  => '{scrolloff}{center}' . $welcome,
 );
 
