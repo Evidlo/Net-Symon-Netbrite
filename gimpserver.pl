@@ -25,7 +25,6 @@ my $strOutPostfix = 'k OUT';
 
 my $ctrMax   = 18446744073709551615;
 my $sleep    = 5; # number of seconds between updates
-#my $factor   = 1048576; # Factor to shorten by, to get to MB/s
 my $factor   = 1024; # Factor to shorten by, to get to kB/s
 
 my $result;    # holds response
@@ -72,7 +71,6 @@ my $status = new Net::Symon::NetBrite::Zone(
     rect => [61, 0, 160, 16],
     default_font  => 'monospace_16',
     default_color => COLOR_GREEN,
-    scroll_speed => SCROLL_SLOW,
     initial_text  => '{scrolloff}{center}' . $welcome,
 );
 
