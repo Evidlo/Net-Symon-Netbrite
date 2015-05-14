@@ -1,2 +1,2 @@
 #!/bin/sh 
-./gimpserver.pl  192.168.220.242 '{green}G{yellow}I{red}M{green}P{yellow}L{red}A{green}N{red}!' 
+./gimpserver.pl  192.168.220.242 '{green}T{yellow}H{red}E{green}C{yellow}A{red}M{green}P{red}!' 
