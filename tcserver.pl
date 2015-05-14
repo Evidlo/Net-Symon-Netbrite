@@ -49,45 +49,45 @@ my $sign = Net::Symon::NetBrite->new(
 );
 
 my $strOut = new Net::Symon::NetBrite::Zone(
-    rect => [0, 0, 27, 8],
+    rect => [0, 0, 25, 8],
     default_font  => 'proportional_5',
     default_color => COLOR_RED,
     initial_text  => sprintf('{scrolloff}{left}%s', $strOutPostfix),
 );
 my $bwOutDSL = new Net::Symon::NetBrite::Zone(
-    rect => [28, 0, 42, 8],
+    rect => [26, 0, 40, 8],
     default_font  => 'proportional_5',
     default_color => COLOR_RED,
     initial_text  => sprintf('{scrolloff}{right}%d', 0),
 );
 my $bwOutLTE = new Net::Symon::NetBrite::Zone(
-    rect => [43, 0, 60, 8],
+    rect => [41, 0, 70, 8],
     default_font  => 'proportional_5',
     default_color => COLOR_RED,
     initial_text  => sprintf('{scrolloff}{right}%d', 0),
 );
 
 my $strIn = new Net::Symon::NetBrite::Zone(
-    rect => [0, 9, 27, 16],
+    rect => [0, 9, 25, 16],
     default_font  => 'proportional_5',
     default_color => COLOR_GREEN,
    initial_text  => sprintf('{scrolloff}{left}%s', $strInPostfix),
 );
 my $bwInDSL = new Net::Symon::NetBrite::Zone(
-    rect => [28, 9, 42, 16],
+    rect => [26, 9, 40, 16],
     default_font  => 'proportional_5',
     default_color => COLOR_GREEN,
    initial_text  => sprintf('{scrolloff}{right}%d', 0),
 );
 my $bwInLTE = new Net::Symon::NetBrite::Zone(
-    rect => [43, 9, 60, 16],
+    rect => [41, 9, 70, 16],
     default_font  => 'proportional_5',
     default_color => COLOR_GREEN,
    initial_text  => sprintf('{scrolloff}{right}%d', 0),
 );
 
 my $status = new Net::Symon::NetBrite::Zone(
-    rect => [61, 0, 160, 16],
+    rect => [71, 0, 160, 16],
     default_font  => 'monospace_16',
     default_color => COLOR_GREEN,
     initial_text  => '{scrolloff}{center}' . $welcome,
