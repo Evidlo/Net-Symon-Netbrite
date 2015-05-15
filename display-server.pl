@@ -13,6 +13,8 @@ use Net::SNMP;
 use Net::Symon::NetBrite qw(:constants);
 use Net::Symon::NetBrite::Zone;
 
+my @display_clients;
+
 ##
 my $welcome  = shift || 'THECAMP!';
 
@@ -90,27 +92,20 @@ my @threads = initThreads();
 #		$_ = threads->create(\&doOperation);
 #}
 
-my $thr1 = threads->create(\&doOperation,"192.168.220.241");
-my $thr2 = threads->create(\&doOperation,"192.168.220.242");
-$thr1->join();
-$thr2->join();
+my $display_one = Net::Symon::NetBrite->new(
+	address => "192.168.220.241",
+);
 
-####################### SUBROUTINES ############################
-sub initThreads{
-	my @initThreads;
-	for(my $i = 1;$i<=$num_of_threads;$i++){
-		push(@initThreads,$i);
-	}
-	return @initThreads;
-}
+my $display_two = Net::Symon::NetBrite->new(
+	address => "192.168.220.242",
+);
 
-sub doOperation{
-	my $key;
+my $thr1 = threads->create(\&initiateDisplay,$display_one);
+my $thr2 = threads->create(\&initiateDisplay,$display_two);
+$display_one = $thr1->join();
+$display_two = $thr2->join();
 
-	# Get the thread id. Allows each thread to be identified.
-	my $id = threads->tid();
-	
-	my $result;    # holds response
+my $ekey;
 
 	my $oldVarInDSL  = 0; # value from 5 secs ago
 	my $oldVarOutDSL = 0; # value from 5 secs ago
@@ -127,14 +122,102 @@ sub doOperation{
 
 	my $mbInLTE  = 0;  # mbit per sec in
 	my $mbOutLTE = 0;  # mbit per sec out
+
+while ( !defined( $ekey = ReadKey(-1) ) ) {
+
+	# Get the thread id. Allows each thread to be identified.
+	my $id = threads->tid();
 	
-	my $sign = Net::Symon::NetBrite->new(
-		address => $_[0],
+	my $result;    # holds response
+	
+	my ($session, $error) = Net::SNMP->session(
+		-hostname  => $router,
+		-community => $comm,
+		-version   => $sver,
 	);
+	if (!defined $session) {
+		printf "ERROR: %s.\n", $error;
+		exit 1;
+	}
+
+	$result = $session->get_request(
+	    -varbindlist => 
+	    [ 
+	        "$mibIn.$ifIndexDSL",
+	        "$mibOut.$ifIndexDSL",
+	        "$mibIn.$ifIndexLTE",
+	        "$mibOut.$ifIndexLTE",
+	    ],
+	);
+	if (!defined $result) {
+	    printf "Got %s querying %s.\n", $session->error(), $_[0];
+	    $session->close();
+	    exit 1;
+	}
+	$oldVarInDSL = $varInDSL;
+	$oldVarOutDSL = $varOutDSL;
+	$oldVarInLTE = $varInLTE;
+	$oldVarOutLTE = $varOutLTE;
+	$varInDSL  = $result->{"$mibIn.$ifIndexDSL"};
+	$varOutDSL = $result->{"$mibOut.$ifIndexDSL"};
+	$varInLTE  = $result->{"$mibIn.$ifIndexLTE"};
+	$varOutLTE = $result->{"$mibOut.$ifIndexLTE"};
+
+	$session->close();
+
+	if ($varInDSL < $oldVarInDSL) {
+	    $mbInDSL = (($ctrMax - $oldVarInDSL) + $varInDSL);
+	} else {
+	    $mbInDSL  = ($varInDSL - $oldVarInDSL);
+	}
+	if ($varOutDSL < $oldVarOutDSL) {
+	    $mbOutDSL = (($ctrMax - $oldVarOutDSL) + $varOutDSL);
+	} else {
+	    $mbOutDSL = ($varOutDSL - $oldVarOutDSL);
+	}
+	if ($varInLTE < $oldVarInLTE) {
+	    $mbInLTE = (($ctrMax - $oldVarInLTE) + $varInLTE);
+	} else {
+	    $mbInLTE  = ($varInLTE - $oldVarInLTE);
+	}
+	if ($varOutLTE < $oldVarOutLTE) {
+	    $mbOutLTE = (($ctrMax - $oldVarOutLTE) + $varOutLTE);
+	} else {
+	    $mbOutLTE = ($varOutLTE - $oldVarOutLTE);
+	}
 	
-	print "Connection to $_[0] Thread $id\n";
+	$mbInDSL  /= $factor * $sleep;
+	$mbOutDSL /= $factor * $sleep;
 	
-	$sign->zones(
+	$mbInLTE  /= $factor * $sleep;
+	$mbOutLTE /= $factor * $sleep;
+	
+	$thr1 = threads->create(\&sendData,$display_one,$mbInDSL,$mbOutDSL,$mbInLTE,$mbOutLTE);
+	$thr2 = threads->create(\&sendData,$display_two,$mbInDSL,$mbOutDSL,$mbInLTE,$mbOutLTE);
+	$display_one = $thr1->join();
+	$display_two = $thr2->join();
+	
+	sleep 5;
+}
+
+####################### SUBROUTINES ############################
+
+sub initThreads{
+	my @initThreads;
+	for(my $i = 1;$i<=$num_of_threads;$i++){
+		push(@initThreads,$i);
+	}
+	return @initThreads;
+}
+
+sub initiateDisplay{
+	my $id = threads->tid();
+	
+	my $display = $_[0];
+	
+	print "Thread $id running\n";
+	
+	$display->zones(
 		strout      => $strOut,
 		bwoutdsl    => $bwOutDSL,
 		bwoutlte    => $bwOutLTE,
@@ -144,79 +227,29 @@ sub doOperation{
 		status      => $status,
 	);
 	
-	while ( !defined( $key = ReadKey(-1) ) ) {
-
-		my ($session, $error) = Net::SNMP->session(
-			-hostname  => $router,
-			-community => $comm,
-			-version   => $sver,
-		);
-		if (!defined $session) {
-			printf "ERROR: %s.\n", $error;
-			exit 1;
-		}
-
-		$result = $session->get_request(
-		    -varbindlist => 
-		    [ 
-		        "$mibIn.$ifIndexDSL",
-		        "$mibOut.$ifIndexDSL",
-		        "$mibIn.$ifIndexLTE",
-		        "$mibOut.$ifIndexLTE",
-		    ],
-		);
-		if (!defined $result) {
-		    printf "Got %s querying %s.\n", $session->error(), $_[0];
-		    $session->close();
-		    exit 1;
-		}
-		$oldVarInDSL = $varInDSL;
-		$oldVarOutDSL = $varOutDSL;
-		$oldVarInLTE = $varInLTE;
-		$oldVarOutLTE = $varOutLTE;
-		$varInDSL  = $result->{"$mibIn.$ifIndexDSL"};
-		$varOutDSL = $result->{"$mibOut.$ifIndexDSL"};
-		$varInLTE  = $result->{"$mibIn.$ifIndexLTE"};
-		$varOutLTE = $result->{"$mibOut.$ifIndexLTE"};
-
-		$session->close();
-
-		if ($varInDSL < $oldVarInDSL) {
-		    $mbInDSL = (($ctrMax - $oldVarInDSL) + $varInDSL);
-		} else {
-		    $mbInDSL  = ($varInDSL - $oldVarInDSL);
-		}
-		if ($varOutDSL < $oldVarOutDSL) {
-		    $mbOutDSL = (($ctrMax - $oldVarOutDSL) + $varOutDSL);
-		} else {
-		    $mbOutDSL = ($varOutDSL - $oldVarOutDSL);
-		}
-		if ($varInLTE < $oldVarInLTE) {
-		    $mbInLTE = (($ctrMax - $oldVarInLTE) + $varInLTE);
-		} else {
-		    $mbInLTE  = ($varInLTE - $oldVarInLTE);
-		}
-		if ($varOutLTE < $oldVarOutLTE) {
-		    $mbOutLTE = (($ctrMax - $oldVarOutLTE) + $varOutLTE);
-		} else {
-		    $mbOutLTE = ($varOutLTE - $oldVarOutLTE);
-		}
-		
-		$mbInDSL  /= $factor * $sleep;
-		$mbOutDSL /= $factor * $sleep;
-		
-		$mbInLTE  /= $factor * $sleep;
-		$mbOutLTE /= $factor * $sleep;
-
-		
-		$sign->message('bwindsl', sprintf '{scrolloff}{right}%.0f', $mbInDSL);
-		$sign->message('bwoutdsl', sprintf '{scrolloff}{right}%.0f', $mbOutDSL);
-		$sign->message('bwinlte', sprintf '{scrolloff}{right}%.0f', $mbInLTE);
-		$sign->message('bwoutlte', sprintf '{scrolloff}{right}%.0f', $mbOutLTE);
-				
-		sleep 5;
-	}
+	print "Thread $id ending\n";
 	
-	threads->exit();
+	return $display;
 }
 
+sub sendData{
+	my $id = threads->tid();
+
+	my $display = $_[0];
+	
+	my $mbInDSL = $_[1];
+	my $mbOutDSL = $_[2];
+	my $mbInLTE = $_[3];
+	my $mbOutLTE = $_[4];
+	
+	print "Thread $id running\n";
+	
+	$display->message('bwindsl', sprintf '{scrolloff}{right}%.0f', $mbInDSL);
+	$display->message('bwoutdsl', sprintf '{scrolloff}{right}%.0f', $mbOutDSL);
+	$display->message('bwinlte', sprintf '{scrolloff}{right}%.0f', $mbInLTE);
+	$display->message('bwoutlte', sprintf '{scrolloff}{right}%.0f', $mbOutLTE);
+	
+	print "Thread $id ending\n";
+	
+	return $display;
+}
