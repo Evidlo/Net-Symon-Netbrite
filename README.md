@@ -13,5 +13,5 @@ Here's how I got the sign working on Debian
     ./Build installdeps
     ./Build manifest
     
-    # write to the sign
+    # write to the sign (edit the script to use the correct ip address)
     perl signserver.pl
