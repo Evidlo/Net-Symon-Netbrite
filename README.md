@@ -1,8 +1,11 @@
 # Symon Sign
 
-Here's how I got the sign working on Debian
+Here's how I got the sign working on Debian.
 
-    # set up address to talk to sign.  Use interface name for your ethernet port
+This assumes the sign is at 10.164.3.85 and is connected via ethernet (e.g. enp0s25).
+
+    # set up address on same subnet to talk to sign (e.g. increment the last octet).  
+    # Use interface name for your ethernet port
     sudo ip addr add 10.164.3.86/24 dev enp0s25
 
     # install perl deps
