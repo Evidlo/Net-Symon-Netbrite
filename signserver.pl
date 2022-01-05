@@ -96,6 +96,5 @@ $sign->zones(
 # <>;
 # $sign->message('line3host', '{scrolloff}{yellow}sofy.gvpn');
 # $sign->message('line3', '{yellow}High CPU for multiple processes.');
-<>;
-$sign->reboot();
 
+# $sign->reboot();
